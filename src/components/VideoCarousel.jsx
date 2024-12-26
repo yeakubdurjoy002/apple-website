@@ -1,73 +1,66 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { highlightsSlides } from "../constant";
-import gsap from "gsap";
 
 const VideoCarousel = () => {
   const videoRef = useRef([]);
-  const videoSpanRef = useRef([]);
-  const videoDivRef = useRef([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const [video, setVideo] = useState({
-    isEnd: false,
-    startPlay: false,
-    videoId: 0,
-    isLastVideo: false,
-    isPlaying: false,
-  });
-
-  const { isEnd, isLastVideo, startPlay, videoId, isPlaying } = video;
-  const [loadedData, setLoadedData] = useState([]);
-
-  useEffect(() => {
-    if (loadedData.length > 3) {
-      if (!isPlaying) {
-        videoRef.current[videoId]?.pause();
-      } else {
-        startPlay && videoRef.current[videoId]?.play();
-      }
+  // Play the current video
+  const handlePlay = () => {
+    const currentVideo = videoRef.current[currentVideoIndex];
+    if (currentVideo) {
+      currentVideo.play();
+      setIsPlaying(true);
     }
-  }, [startPlay, isPlaying, isLastVideo, loadedData, videoId]);
+  };
 
-  useEffect(() => {
-    const span = videoSpanRef.current;
-    if (span[videoId]) {
-      const anim = gsap.to(span[videoId], {
-        width: "100%",
-        duration: videoRef.current[videoId]?.duration || 0,
-        ease: "linear",
-        onUpdate: () => {
-          // Optional: Handle progress update
-        },
-        onComplete: () => {
-          setVideo((prevVideo) => ({
-            ...prevVideo,
-            isEnd: true,
-          }));
-        },
-      });
-      return () => anim.kill(); // Cleanup animation
+  // Pause the current video
+  const handlePause = () => {
+    const currentVideo = videoRef.current[currentVideoIndex];
+    if (currentVideo) {
+      currentVideo.pause();
+      setIsPlaying(false);
     }
-  }, [videoId, startPlay]);
+  };
+
+  // Navigate to the next video
+  const handleNext = () => {
+    if (currentVideoIndex < highlightsSlides.length - 1) {
+      const currentVideo = videoRef.current[currentVideoIndex];
+      if (currentVideo) currentVideo.pause(); // Pause the current video
+      setCurrentVideoIndex((prevIndex) => prevIndex + 1);
+      setIsPlaying(false); // Ensure next video starts paused
+    }
+  };
+
+  // Navigate to the previous video
+  const handlePrev = () => {
+    if (currentVideoIndex > 0) {
+      const currentVideo = videoRef.current[currentVideoIndex];
+      if (currentVideo) currentVideo.pause(); // Pause the current video
+      setCurrentVideoIndex((prevIndex) => prevIndex - 1);
+      setIsPlaying(false); // Ensure previous video starts paused
+    }
+  };
 
   return (
-    <div className="flex items-center">
-      {highlightsSlides.map((list, i) => (
-        <div key={list.id} id="slider" className="sm:pr-20 pr-10">
-          <div className="video-carousel_container">
+    <div className="flex flex-col items-center">
+      <div className="relative w-full">
+        {highlightsSlides.map((list, index) => (
+          <div
+            key={list.id}
+            className={`video-carousel_container ${
+              index === currentVideoIndex ? "block" : "hidden"
+            }`}
+          >
             <div className="w-full h-full flex-center rounded-3xl overflow-hidden bg-black">
               <video
-                id="video"
                 playsInline
                 preload="auto"
                 muted
-                ref={(el) => (videoRef.current[i] = el)}
-                onPlay={() =>
-                  setVideo((prevVideo) => ({
-                    ...prevVideo,
-                    isPlaying: true,
-                  }))
-                }
-                className="p-20"
+                ref={(el) => (videoRef.current[index] = el)}
+                className="p-20 w-full"
               >
                 <source src={list.video} type="video/mp4" />
               </video>
@@ -80,8 +73,41 @@ const VideoCarousel = () => {
               ))}
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-center mt-6 space-x-4">
+        <button
+          onClick={handlePrev}
+          disabled={currentVideoIndex === 0}
+          className="px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        {isPlaying ? (
+          <button
+            onClick={handlePause}
+            className="px-4 py-2 bg-red-500 text-white rounded"
+          >
+            Pause
+          </button>
+        ) : (
+          <button
+            onClick={handlePlay}
+            className="px-4 py-2 bg-green-500 text-white rounded"
+          >
+            Play
+          </button>
+        )}
+        <button
+          onClick={handleNext}
+          disabled={currentVideoIndex === highlightsSlides.length - 1}
+          className="px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };
